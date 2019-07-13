@@ -1,0 +1,8 @@
+/.dapper
+/.cache
+/k3v
+/kubeconfig.yaml
+/bin
+/dist
+*.swp
+.idea
