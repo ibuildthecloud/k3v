@@ -3,6 +3,7 @@ package pod
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/rancher/k3v/pkg/translate"
 	v1 "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
@@ -24,6 +25,8 @@ var (
 )
 
 type handler struct {
+	sync.Mutex
+
 	targetNamespace string
 	apply           apply.Apply
 
@@ -33,6 +36,9 @@ type handler struct {
 	pPodCache     v1.PodCache
 	pServiceCache v1.ServiceCache
 	k8sVPods      typedcorev1.PodsGetter
+	port          int
+
+	pinged bool
 }
 
 func Register(
@@ -43,6 +49,7 @@ func Register(
 	vPods v1.PodController,
 	k8sVPods typedcorev1.PodsGetter,
 	pServices v1.ServiceController,
+	port int,
 ) {
 
 	h := &handler{
@@ -60,6 +67,7 @@ func Register(
 		vPodCache:     vPods.Cache(),
 		k8sVPods:      k8sVPods,
 		pServiceCache: pServices.Cache(),
+		port:          port,
 	}
 
 	vPods.Cache().AddIndexer(vPodNames, func(obj *corev1.Pod) (strings []string, e error) {

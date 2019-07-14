@@ -1,6 +1,8 @@
 /.dapper
 /.cache
 /k3v
+/k3v.exe
+/k3v-data
 /kubeconfig.yaml
 /bin
 /dist

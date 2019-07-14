@@ -26,13 +26,13 @@ type Config struct {
 
 func startK8S(ctx context.Context, cfg Config) (string, error) {
 	serverConfig := &cmds.Server{
-		DataDir:          "./k3v",
+		DataDir:          "./k3v-data",
 		KubeConfigOutput: "../../kubeconfig.yaml",
 		TLSSan:           []string{"10.43.194.102"},
 		ClusterCIDR:      "10.44.0.0/16",
 		ServiceCIDR:      "10.45.0.0/16",
 		ClusterDomain:    "cluster.local",
-		HTTPSPort:        7443,
+		HTTPSPort:        cfg.ListenPort,
 		DisableAgent:     true,
 		DisableScheduler: true,
 		NoDeploy: []string{
@@ -89,7 +89,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	controllers.Register(ctx, cfg.Namespace, pContext, vContext)
+	controllers.Register(ctx, cfg.ListenPort, cfg.Namespace, pContext, vContext)
 
 	if err := start.All(ctx, 5, append(pContext.Starters, vContext.Starters...)...); err != nil {
 		return err

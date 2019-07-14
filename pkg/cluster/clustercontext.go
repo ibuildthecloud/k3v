@@ -24,51 +24,50 @@ type Context struct {
 }
 
 func NewContext(kubeConfig, namespace string) (*Context, error) {
-	cfg, err := kubeconfig.GetNonInteractiveClientConfig(kubeConfig).ClientConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error building kubeconfig")
-	}
-
-	k8s, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error building client")
-	}
-
-	first := true
 	for {
-		_, err := k8s.Discovery().ServerVersion()
-		if err == nil {
-			break
-		} else {
-			if !first {
-				logrus.Infof("Waiting on kubernetes at: %s", cfg.Host)
-				first = false
-			}
-			time.Sleep(2 * time.Second)
+		cfg, err := kubeconfig.GetNonInteractiveClientConfig(kubeConfig).ClientConfig()
+		if err != nil {
+			return nil, errors.Wrap(err, "Error building kubeconfig")
 		}
+
+		k8s, err := kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error building client")
+		}
+
+		first := true
+		_, err = k8s.Discovery().ServerVersion()
+		if err != nil {
+			if !first {
+				logrus.Infof("Waiting on kubernetes at %s: %v", cfg.Host, err)
+			}
+			first = false
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		apply := apply.New(k8s.Discovery(), apply.NewClientFactory(cfg))
+
+		controllers, err := core.NewFactoryFromConfigWithNamespace(cfg, namespace)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error building controllers")
+		}
+
+		return &Context{
+			RestConfig: cfg,
+			K8s:        k8s,
+			Core:       controllers.Core().V1(),
+			Apply: apply.WithCacheTypes(
+				controllers.Core().V1().Service(),
+				controllers.Core().V1().Pod(),
+				controllers.Core().V1().Service(),
+				controllers.Core().V1().Endpoints(),
+				controllers.Core().V1().ConfigMap(),
+				controllers.Core().V1().Secret(),
+			).WithStrictCaching(),
+			Starters: []start.Starter{
+				controllers,
+			},
+		}, nil
 	}
-
-	apply := apply.New(k8s.Discovery(), apply.NewClientFactory(cfg))
-
-	controllers, err := core.NewFactoryFromConfigWithNamespace(cfg, namespace)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error building controllers")
-	}
-
-	return &Context{
-		RestConfig: cfg,
-		K8s:        k8s,
-		Core:       controllers.Core().V1(),
-		Apply: apply.WithCacheTypes(
-			controllers.Core().V1().Service(),
-			controllers.Core().V1().Pod(),
-			controllers.Core().V1().Service(),
-			controllers.Core().V1().Endpoints(),
-			controllers.Core().V1().ConfigMap(),
-			controllers.Core().V1().Secret(),
-		).WithStrictCaching(),
-		Starters: []start.Starter{
-			controllers,
-		},
-	}, nil
 }

@@ -43,7 +43,7 @@ func main() {
 		cli.IntFlag{
 			Name:        "listen-port",
 			EnvVar:      "K3V_LISTEN_PORT",
-			Value:       6443,
+			Value:       7443,
 			Destination: &config.ListenPort,
 		},
 		cli.BoolFlag{

@@ -1,7 +1,11 @@
 package pod
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io"
+	ioutil2 "io/ioutil"
+	"net/http"
 
 	"github.com/rancher/k3v/pkg/translate"
 	corev1 "k8s.io/api/core/v1"
@@ -128,7 +132,44 @@ func (h *handler) getEnvVars() ([]corev1.EnvVar, error) {
 		return nil, fmt.Errorf("waiting for kubernetes service IP")
 	}
 
+	if err := h.ping(k8sIP, h.port); err != nil {
+		return nil, err
+	}
+
 	return translate.GetEnvVars(k8sIP), nil
+}
+
+func (h *handler) ping(ip string, port int) error {
+	h.Lock()
+	defer h.Unlock()
+
+	if h.pinged {
+		return nil
+	}
+
+	c := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	defer c.CloseIdleConnections()
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://localhost:%d", port), nil)
+	if err != nil {
+		return err
+	}
+	req.Host = ip
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	io.Copy(ioutil2.Discard, resp.Body)
+	resp.Body.Close()
+
+	h.pinged = true
+	return nil
 }
 
 func (h *handler) getNSIP() ([]string, error) {

@@ -69,15 +69,17 @@ func (h *handler) OnChange(key string, node *corev1.Node) (*corev1.Node, error) 
 	if !equality.Semantic.DeepEqual(vNode.Status, node.Status) {
 		newNode := vNode.DeepCopy()
 		newNode.Status = node.Status
-		_, err := h.nodes.UpdateStatus(newNode)
-		return node, err
+		vNode, err = h.nodes.UpdateStatus(newNode)
+		if err != nil {
+			return node, err
+		}
 	}
 
 	if !equality.Semantic.DeepEqual(vNode.Spec, node.Spec) {
 		newNode := vNode.DeepCopy()
 		newNode.Spec = node.Spec
-		return h.nodes.Update(newNode)
+		_, err = h.nodes.Update(newNode)
 	}
 
-	return node, nil
+	return node, err
 }
