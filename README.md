@@ -15,6 +15,7 @@ virtual cluster spans multiple physical clusters.
 Please note, this is POC quality stuff. 
 
 1. Download k3v binary from the releases page.
+    NOTE: While Windows and macOS binaries are available they might not work :/
 2. Run k3v pointing to a kubeconfig file of your physical cluster.
     ```sh
     ./k3v --kubeconfig someconfig.yaml
