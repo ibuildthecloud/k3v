@@ -46,7 +46,7 @@ trust the security of a container.  Meaning that one bad neighbor can't
 attack another neighbor. Virtual clusters does not help with this concern.
 To address this you need to trust containers or leverage another technology
 like gvisor or katacontainers.  The second and more fundamental issue is
-that the attach surface of Kubernetes is far to large for multitenancy.  Right
+that the attack surface of Kubernetes is far to large for multitenancy.  Right
 now the only way to accomplish multi tenancy is to not allow users to do the
 vast majority of Kubernetes operations.  It is far too difficult to ensure that
 all the various APIs will not expose some issue.  But limiting access means
